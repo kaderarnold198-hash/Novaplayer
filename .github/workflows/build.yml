@@ -1,0 +1,30 @@
+name: Build APK
+on: [push, workflow_dispatch]
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Extraire et compiler APK
+        run: |
+          python3 -c "import zipfile; zipfile.ZipFile('NovaPlayer_Package.pdf').extractall('.')"
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew build_and_sign_apk.sh
+          ./build_and_sign_apk.sh
+      - name: Publier APK en telechargement direct
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete v1.0.0 -y || true
+          gh release create v1.0.0 dist/*.apk --title "Nova Player Premium APK" --notes "Cliquez sur un fichier .apk ci-dessous pour l'installer."
+          
