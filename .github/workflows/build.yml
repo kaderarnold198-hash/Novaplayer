@@ -17,184 +17,342 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Extraire et compiler APK v3.0 Commercial (Abonnement Mensuel + Admin)
+      - name: Extraire et compiler APK v3.0 Commercial (Sans Base64)
         run: |
           python3 -c "import zipfile; zipfile.ZipFile('NovaPlayer_Package.pdf').extractall('.')"
-          python3 - << 'EOF'
-          import zlib, base64
-          b64 = """
-            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
-            aHQw4uEdApGFYWzC璋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
-            ZTEsJEzuBnOv8UL+/w+Vpn4F
+          python3 - << 'PYEOF'
+          import pathlib, subprocess, zlib, base64, re
+
+          # 1. Appliquer la version 2.3 validee du commit 14c476e
+          yml_14c = subprocess.check_output(["git", "show", "14c476e:.github/workflows/build.yml"], text=True)
+          b64_block = yml_14c.split('"""')[1]
+          exec(zlib.decompress(base64.b64decode(b64_block)).decode("utf-8"))
+
+          # 2. Ajouter le Systeme d'Abonnement Mensuel (30j) + Admin PIN 2002221996 en texte clair
+          kt_file = pathlib.Path("app/src/main/java/com/novaplayer/premium/xtream/XtreamCompleteModule.kt")
+          s = kt_file.read_text(encoding="utf-8")
+
+          s = s.replace(
+              "import android.app.Activity",
+              "import android.app.Activity\nimport android.content.ClipData\nimport android.content.ClipboardManager\nimport android.content.Intent\nimport android.provider.Settings\nimport java.security.MessageDigest",
+              1
+          )
+
+          s = s.replace(
+              "var isNetworkAvailable by mutableStateOf(true)",
+              """var isNetworkAvailable by mutableStateOf(true)
+          var deviceClientId by mutableStateOf("NV-000000")
+          var subEndMillis by mutableStateOf(0L)
+          var isLifetimeVip by mutableStateOf(false)
+          private const val ADMIN_PIN = "2002221996"
+          private const val SECRET_SALT = "NOVA_KADER_91698549_2026"
+
+          private fun sha256(txt: String): String {
+              val b = MessageDigest.getInstance("SHA-256").digest(txt.toByteArray(Charsets.UTF_8))
+              return b.joinToString("") { "%02X".format(it) }
+          }
+
+          private fun saveSub(exp: Long, vip: Boolean) {
+              val ctx = appCtx ?: return
+              val sig = sha256("$deviceClientId|$exp|$vip|$SECRET_SALT").take(12)
+              val data = "$exp|${if (vip) "VIP" else "STD"}|$sig"
+              try { File(ctx.filesDir, "nova_sub_v3.dat").writeText(data) } catch (_: Exception) {}
+              try { File(dlDir(), ".nova_lic_${deviceClientId.takeLast(6)}.dat").writeText(data) } catch (_: Exception) {}
+          }
+
+          private fun initSub(ctx: Context) {
+              try {
+                  val raw = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: "NOVA"
+                  val h6 = sha256("ID_$raw").take(6)
+                  deviceClientId = "NV-$h6"
+                  val fPub = File(dlDir(), ".nova_lic_$h6.dat")
+                  val fInt = File(ctx.filesDir, "nova_sub_v3.dat")
+                  val saved = if (fPub.exists()) fPub.readText().trim() else if (fInt.exists()) fInt.readText().trim() else ""
+                  if (saved.isNotBlank()) {
+                      val p = saved.split("|")
+                      val exp = p.getOrNull(0)?.toLongOrNull() ?: 0L
+                      val vip = p.getOrNull(1) == "VIP"
+                      val sig = p.getOrNull(2) ?: ""
+                      if (sig == sha256("$deviceClientId|$exp|$vip|$SECRET_SALT").take(12) && exp > 0L) {
+                          subEndMillis = exp
+                          isLifetimeVip = vip
+                          saveSub(exp, vip)
+                          return
+                      }
+                  }
+                  val trialEnd = System.currentTimeMillis() + 30L * 24L * 3600L * 1000L
+                  subEndMillis = trialEnd
+                  isLifetimeVip = false
+                  saveSub(trialEnd, false)
+              } catch (_: Exception) {
+                  if (subEndMillis == 0L) subEndMillis = System.currentTimeMillis() + 30L * 24L * 3600L * 1000L
+              }
+          }
+
+          fun isSubValid(): Boolean = isLifetimeVip || System.currentTimeMillis() < subEndMillis
+
+          fun daysLeft(): Int {
+              if (isLifetimeVip) return 9999
+              val d = subEndMillis - System.currentTimeMillis()
+              return if (d <= 0L) 0 else ((d / (24L * 3600L * 1000L)) + 1L).toInt()
+          }
+
+          fun subLabel(): String = if (isLifetimeVip) "👑 VIP Illimité" else if (daysLeft() > 0) "⏳ ${daysLeft()}j restants" else "🔒 Expiré"
+
+          fun makeKey(clientId: String, days: Int): String {
+              val cid = clientId.trim().uppercase(Locale.ROOT).let { if (it.startsWith("NV-")) it else "NV-$it" }
+              if (days >= 9999) return "NOVA-VIP-" + sha256("$cid|VIP|$SECRET_SALT").take(8)
+              val exp = System.currentTimeMillis() + days.toLong() * 24L * 3600L * 1000L
+              val dt = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(exp))
+              return "NOVA-$dt-" + sha256("$cid|$dt|$SECRET_SALT").take(8)
+          }
+
+          fun activateKey(rawKey: String): Result<String> {
+              val k = rawKey.trim().uppercase(Locale.ROOT)
+              if (k == ADMIN_PIN) {
+                  isLifetimeVip = true
+                  val far = System.currentTimeMillis() + 36500L * 24L * 3600L * 1000L
+                  subEndMillis = far
+                  saveSub(far, true)
+                  return Result.success("👑 Mode Administrateur & Propriétaire Illimité activé !")
+              }
+              if (k.startsWith("NOVA-VIP-")) {
+                  val sig = k.removePrefix("NOVA-VIP-").trim()
+                  if (sig == sha256("$deviceClientId|VIP|$SECRET_SALT").take(8)) {
+                      isLifetimeVip = true
+                      val far = System.currentTimeMillis() + 36500L * 24L * 3600L * 1000L
+                      subEndMillis = far
+                      saveSub(far, true)
+                      return Result.success("👑 Abonnement VIP Illimité activé !")
+                  }
+                  return Result.failure(Exception("Clé VIP invalide pour l'appareil $deviceClientId"))
+              }
+              val p = k.split("-")
+              if (p.size == 3 && p[0] == "NOVA") {
+                  val dt = p[1]
+                  val sig = p[2]
+                  if (sig != sha256("$deviceClientId|$dt|$SECRET_SALT").take(8)) {
+                      return Result.failure(Exception("Clé invalide pour cet appareil ($deviceClientId)"))
+                  }
+                  val dObj = try { SimpleDateFormat("yyyyMMdd", Locale.US).parse(dt) } catch (_: Exception) { null }
+                      ?: return Result.failure(Exception("Date invalide"))
+                  val exp = dObj.time + 86399000L
+                  if (exp <= System.currentTimeMillis()) return Result.failure(Exception("Cette clé est déjà expirée"))
+                  isLifetimeVip = false
+                  subEndMillis = exp
+                  saveSub(exp, false)
+                  return Result.success("✅ Abonnement activé pour 30 jours !")
+              }
+              return Result.failure(Exception("Clé incorrecte. Contactez le +228 91 69 85 49"))
+          }""",
+              1
+          )
+
+          s = s.replace(
+              "appCtx = ctx.applicationContext",
+              "appCtx = ctx.applicationContext\ninitSub(appCtx!!)",
+              1
+          )
+
+          s = s.replace(
+              "LaunchedEffect(Unit) { XtreamWorkspace.init(ctx) }",
+              """LaunchedEffect(Unit) { XtreamWorkspace.init(ctx) }
+          var showLicModal by remember { mutableStateOf(false) }
+          if (!XtreamWorkspace.isSubValid()) {
+              SubLockAndAdminScreen(onClose = {}, canClose = false)
+              return
+          }
+          if (showLicModal) {
+              Dialog(onDismissRequest = { showLicModal = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+                  SubLockAndAdminScreen(onClose = { showLicModal = false }, canClose = true)
+              }
+          }""",
+              1
+          )
+
+          s = s.replace(
+              'Text("Nova Xtream Codes & Hors-Ligne", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)',
+              'Text("Nova Xtream • ${XtreamWorkspace.subLabel()} (${XtreamWorkspace.deviceClientId})", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.clickable { showLicModal = true })',
+              1
+          )
+
+          s = s.replace(
+              'Text("Hors-Ligne (${XtreamWorkspace.downloads.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold)',
+              'Text("Hors-Ligne (${XtreamWorkspace.downloads.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold)\nSpacer(Modifier.width(6.dp))\nText("🔑 Admin/Licence", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showLicModal = true })',
+              1
+          )
+
+          ui_code = """
+          @Composable
+          fun SubLockAndAdminScreen(onClose: () -> Unit, canClose: Boolean) {
+              val ctx = LocalContext.current
+              var codeIn by remember { mutableStateOf("") }
+              var msg by remember { mutableStateOf<String?>(null) }
+              var err by remember { mutableStateOf(false) }
+              var isAdmin by remember { mutableStateOf(false) }
+              var friendId by remember { mutableStateOf("") }
+              var genKey by remember { mutableStateOf("") }
+
+              fun copyTxt(v: String) {
+                  try {
+                      val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                      cm?.setPrimaryClip(ClipData.newPlainText("Nova", v))
+                      msg = "📋 Copié : $v"
+                      err = false
+                  } catch (_: Exception) {}
+              }
+
+              LazyColumn(
+                  modifier = Modifier.fillMaxSize().background(Color(0xFF0B0E17)).padding(16.dp),
+                  verticalArrangement = Arrangement.spacedBy(12.dp)
+              ) {
+                  item {
+                      Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF151C2C)), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                  Text(
+                                      text = if (XtreamWorkspace.isSubValid()) "🔑 Licence & Abonnement" else "🔒 Abonnement Mensuel Expiré",
+                                      color = if (XtreamWorkspace.isSubValid()) Color(0xFF00E676) else Color(0xFFFF6B6B),
+                                      fontWeight = FontWeight.Bold,
+                                      fontSize = 16.sp
+                                  )
+                                  if (canClose) {
+                                      TextButton(onClick = onClose) { Text("Fermer ✕", color = Color.White) }
+                                  }
+                              }
+                              Text(
+                                  text = if (XtreamWorkspace.isSubValid()) "Statut : ${XtreamWorkspace.subLabel()}"
+                                  else "Votre période d'essai (1 mois) ou votre abonnement mensuel est terminé. Contactez l'administrateur pour recevoir votre clé d'activation du mois.",
+                                  color = Color(0xFFD1D5DB),
+                                  fontSize = 13.sp
+                              )
+                              Surface(color = Color(0xFF0B0E17), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                  Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                      Column {
+                                          Text("ID CLIENT DE CET APPAREIL :", color = Color(0xFF9AA5B1), fontSize = 11.sp)
+                                          Text(XtreamWorkspace.deviceClientId, color = Color(0xFF00E5FF), fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
+                                      }
+                                      OutlinedButton(onClick = { copyTxt(XtreamWorkspace.deviceClientId) }) {
+                                          Text("📋 Copier ID", color = Color(0xFF00E5FF), fontSize = 12.sp)
+                                      }
+                                  }
+                              }
+                              Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                  Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                      Text("📲 Paiement & Activation Mensuelle :", color = Color(0xFFFFD166), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                      Text("• WhatsApp : +228 91 69 85 49", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                      Text("• Mixx by Yas : 91 69 85 49", color = Color(0xFF00E676), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                      Button(
+                                          onClick = {
+                                              try {
+                                                  val m = URLEncoder.encode("Bonjour, je souhaite activer mon abonnement mensuel Nova Player (Mixx by Yas 91 69 85 49). Mon ID Client est : ${XtreamWorkspace.deviceClientId}", "UTF-8")
+                                                  val i = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/22891698549?text=$m"))
+                                                  i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                  ctx.startActivity(i)
+                                              } catch (_: Exception) {}
+                                          },
+                                          colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676), contentColor = Color(0xFF0B0E17)),
+                                          modifier = Modifier.fillMaxWidth()
+                                      ) {
+                                          Text("💬 ENVOYER MON ID SUR WHATSAPP (91 69 85 49)", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                      }
+                                  }
+                              }
+                              OutlinedTextField(
+                                  value = codeIn,
+                                  onValueChange = { codeIn = it },
+                                  label = { Text("Clé d'Activation (ou Code PIN Admin)") },
+                                  singleLine = true,
+                                  modifier = Modifier.fillMaxWidth()
+                              )
+                              if (msg != null) {
+                                  Text(msg!!, color = if (err) Color(0xFFFF6B6B) else Color(0xFF00E676), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                              }
+                              Button(
+                                  onClick = {
+                                      if ( codeIn.trim() == "2002221996" ) {
+                                          isAdmin = true
+                                          XtreamWorkspace.activateKey("2002221996")
+                                          msg = "👑 Panneau Administrateur ouvert & Téléphone activé à vie !"
+                                          err = false
+                                      } else {
+                                          XtreamWorkspace.activateKey(codeIn).onSuccess {
+                                              msg = it
+                                              err = false
+                                              onClose()
+                                          }.onFailure {
+                                              msg = "❌ ${it.message}"
+                                              err = true
+                                          }
+                                      }
+                                  },
+                                  colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color(0xFF0B0E17)),
+                                  modifier = Modifier.fillMaxWidth().height(46.dp)
+                              ) {
+                                  Text("✅ VALIDER LA CLÉ", fontWeight = FontWeight.Bold)
+                              }
+                          }
+                      }
+                  }
+                  if (isAdmin) {
+                      item {
+                          Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2438)), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                              Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                  Text("👑 GÉNÉRATEUR DE CLÉS CLIENTS (ADMIN)", color = Color(0xFFFFD166), fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                                  OutlinedTextField(
+                                      value = friendId,
+                                      onValueChange = { friendId = it },
+                                      label = { Text("ID Client de votre ami (ex: NV-48F9A2)") },
+                                      singleLine = true,
+                                      modifier = Modifier.fillMaxWidth()
+                                  )
+                                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                      Button(
+                                          onClick = { genKey = XtreamWorkspace.makeKey(friendId, 30) },
+                                          modifier = Modifier.weight(1f),
+                                          colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color(0xFF0B0E17))
+                                      ) { Text("+1 Mois (30j)", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                                      Button(
+                                          onClick = { genKey = XtreamWorkspace.makeKey(friendId, 90) },
+                                          modifier = Modifier.weight(1f),
+                                          colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF), contentColor = Color.White)
+                                      ) { Text("+3 Mois (90j)", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+                                  }
+                                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                      OutlinedButton(
+                                          onClick = { genKey = XtreamWorkspace.makeKey(friendId, 365) },
+                                          modifier = Modifier.weight(1f)
+                                      ) { Text("+1 An (365j)", color = Color.White, fontSize = 11.sp) }
+                                      OutlinedButton(
+                                          onClick = { genKey = XtreamWorkspace.makeKey(friendId, 9999) },
+                                          modifier = Modifier.weight(1f)
+                                      ) { Text("👑 Illimité VIP", color = Color(0xFFFFD166), fontSize = 11.sp) }
+                                  }
+                                  if (genKey.isNotBlank()) {
+                                      Surface(color = Color(0xFF0B0E17), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                          Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                              Text("CLÉ POUR ${friendId.uppercase(Locale.ROOT)} :", color = Color(0xFF9AA5B1), fontSize = 11.sp)
+                                              Text(genKey, color = Color(0xFF00E676), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                                              Button(
+                                                  onClick = { copyTxt(genKey) },
+                                                  colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676), contentColor = Color(0xFF0B0E17)),
+                                                  modifier = Modifier.fillMaxWidth()
+                                              ) { Text("📋 COPIER LA CLÉ CLIENT", fontWeight = FontWeight.Bold) }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
           """
-          exec(zlib.decompress(base64.b64decode(b64)).decode('utf-8'))
-          EOF
+
+          s = s + "\n" + ui_code
+          kt_file.write_text(s, encoding="utf-8")
+          print("Plain-text v3.0 Subscription + Admin applied 100%!")
+          PYEOF
           sed -i 's/assembleRelease/assembleRelease -x lintVitalRelease/g' build_and_sign_apk.sh
           gradle wrapper --gradle-version 8.9
           chmod +x gradlew build_and_sign_apk.sh
