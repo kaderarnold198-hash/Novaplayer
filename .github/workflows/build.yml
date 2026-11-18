@@ -23,37 +23,30 @@ jobs:
           python3 - << 'PYEOF'
           import pathlib, subprocess, re, textwrap
 
-          # 1. Appliquer toute la v3.0 validee du commit 6059b62 (Build #7 vert)
+          # 1. Appliquer la v3.0 validee du commit 6059b62 (Build #7 vert)
           yml_605 = subprocess.check_output(["git", "show", "6059b62:.github/workflows/build.yml"], text=True)
           py_v30 = textwrap.dedent(yml_605.split("<< 'PYEOF'\n")[1].split("\n          PYEOF")[0])
           exec(py_v30)
 
-          # 2. Ajouter le decodeur FFmpeg Media3 (AC3, E-AC3, DTS, TrueHD) pour l'audio des Films & Series
-          toml_path = pathlib.Path("gradle/libs.versions.toml")
-          if toml_path.exists():
-              t_txt = toml_path.read_text(encoding="utf-8")
-              t_txt = re.sub(r'(media3\s*=\s*)"1\.4\.1"', r'\1"1.5.0"', t_txt)
-              toml_path.write_text(t_txt, encoding="utf-8")
-
+          # 2. Ajouter uniquement le decodeur FFmpeg Media3 (sans toucher a la version 1.4.1 de Media3)
           gradle_path = pathlib.Path("app/build.gradle.kts")
           if gradle_path.exists():
               g_txt = gradle_path.read_text(encoding="utf-8")
-              g_txt = g_txt.replace("1.4.1", "1.5.0")
               if "org.jellyfin.media3:media3-ffmpeg-decoder" not in g_txt:
                   g_txt = g_txt.replace(
                       "dependencies {",
-                      'dependencies {\n    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.5.0+1")',
+                      'dependencies {\n    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.3.1+2")',
                       1
                   )
               gradle_path.write_text(g_txt, encoding="utf-8")
 
-          # 3. Activer FFmpeg Audio (EXTENSION_RENDERER_MODE_PREFER + AudioAttributes) + Mode Wi-Fi Faible (90s buffer)
+          # 3. Activer FFmpeg Audio (AC3/EAC3/DTS) + Mode Wi-Fi Faible (90s buffer)
           kt_file = pathlib.Path("app/src/main/java/com/novaplayer/premium/xtream/XtreamCompleteModule.kt")
           s = kt_file.read_text(encoding="utf-8")
 
           s = s.replace(
-              "import android.app.Activity",
-              "import android.app.Activity\nimport androidx.media3.common.AudioAttributes\nimport androidx.media3.common.C\nimport androidx.media3.exoplayer.DefaultLoadControl\nimport androidx.media3.exoplayer.DefaultRenderersFactory\nimport androidx.media3.exoplayer.trackselection.DefaultTrackSelector",
+              "import androidx.media3.exoplayer.ExoPlayer",
+              "import androidx.media3.common.AudioAttributes\nimport androidx.media3.exoplayer.DefaultLoadControl\nimport androidx.media3.exoplayer.DefaultRenderersFactory\nimport androidx.media3.exoplayer.ExoPlayer",
               1
           )
 
@@ -79,23 +72,14 @@ jobs:
               """val player = remember(req.url) {
           val ok = OkHttpDataSource.Factory(XtreamWorkspace.http).setUserAgent(XtreamWorkspace.UA)
           val ds = DefaultDataSource.Factory(ctx, ok)
-          ExoPlayer.Builder(ctx).setMediaSourceFactory(DefaultMediaSourceFactory(ctx).setDataSourceFactory(ds)).build().apply {""",
+          ExoPlayer.Builder(ctx).setMediaSourceFactory(DefaultMediaSourceFactory(ctx).setDataSourceFactory(ds)).build().apply {
+          setMediaItem(MediaItem.fromUri(req.url))
+          if (req.startMs > 0L && !req.isLive) seekTo(req.startMs)
+          prepare()
+          playWhenReady = true
+          }
+          }""",
               """var qualityLimit by remember { mutableIntStateOf(if (XtreamWorkspace.lowWifiMode) 900_000 else Int.MAX_VALUE) }
-          val trackSelector = remember {
-              DefaultTrackSelector(ctx).apply {
-                  setParameters(
-                      buildUponParameters()
-                          .setMaxVideoBitrate(qualityLimit)
-                          .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                          .setAllowAudioMixedMimeTypeAdaptiveness(true)
-                          .setAllowAudioMixedChannelCountAdaptiveness(true)
-                          .setExceedAudioConstraintsIfNecessary(true)
-                  )
-              }
-          }
-          LaunchedEffect(qualityLimit) {
-              trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoBitrate(qualityLimit))
-          }
           val player = remember(req.url) {
               val userAgent = "IPTVSmartersPlayer"
               val ok = OkHttpDataSource.Factory(XtreamWorkspace.http).setUserAgent(userAgent)
@@ -111,20 +95,31 @@ jobs:
                   .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                   .build()
               ExoPlayer.Builder(ctx, renderersFactory)
-                  .setTrackSelector(trackSelector)
                   .setLoadControl(loadControl)
                   .setAudioAttributes(audioAttrs, true)
                   .setMediaSourceFactory(DefaultMediaSourceFactory(ctx).setDataSourceFactory(ds))
-                  .build().apply {"""
+                  .build().apply {
+                      trackSelectionParameters = trackSelectionParameters.buildUpon().setMaxVideoBitrate(qualityLimit).build()
+                      setMediaItem(MediaItem.fromUri(req.url))
+                      if (req.startMs > 0L && !req.isLive) seekTo(req.startMs)
+                      prepare()
+                      playWhenReady = true
+                  }
+          }
+          LaunchedEffect(qualityLimit) {
+              player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().setMaxVideoBitrate(qualityLimit).build()
+          }""",
+              1
           )
 
           s = s.replace(
               'IconButton(onClick = { showTracks = true }) { Icon(Icons.Default.Subtitles, contentDescription = "Audio/Sous-titres", tint = Color.White) }',
-              'TextButton(onClick = { qualityLimit = when (qualityLimit) { 900_000 -> 450_000; 450_000 -> Int.MAX_VALUE; else -> 900_000 } }) { Text(text = when (qualityLimit) { 450_000 -> "📶 Ultra-Léger"; 900_000 -> "📶 Éco SD"; else -> "📶 HD Auto" }, color = Color(0xFF00E676), fontSize = 11.sp, fontWeight = FontWeight.Bold) }\nIconButton(onClick = { showTracks = true }) { Icon(Icons.Default.Subtitles, contentDescription = "Audio/Sous-titres", tint = Color.White) }'
+              'TextButton(onClick = { qualityLimit = when (qualityLimit) { 900_000 -> 450_000; 450_000 -> Int.MAX_VALUE; else -> 900_000 } }) { Text(text = when (qualityLimit) { 450_000 -> "📶 Ultra-Léger"; 900_000 -> "📶 Éco SD"; else -> "📶 HD Auto" }, color = Color(0xFF00E676), fontSize = 11.sp, fontWeight = FontWeight.Bold) }\nIconButton(onClick = { showTracks = true }) { Icon(Icons.Default.Subtitles, contentDescription = "Audio/Sous-titres", tint = Color.White) }',
+              1
           )
 
           kt_file.write_text(s, encoding="utf-8")
-          print("Short v3.2 Audio FFmpeg + Low-WiFi applied 100%!")
+          print("Ultra-safe v3.2 Audio FFmpeg + Low-WiFi applied 100%!")
           PYEOF
           sed -i 's/assembleRelease/assembleRelease -x lintVitalRelease/g' build_and_sign_apk.sh
           gradle wrapper --gradle-version 8.9
