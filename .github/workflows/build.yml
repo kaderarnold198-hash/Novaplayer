@@ -17,30 +17,53 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Extraire et compiler APK v3.0 Commercial (Sans Base64)
+      - name: Extraire, corriger Audio FFmpeg (v3.2) + Wi-Fi Faible + Licence et compiler APK
         run: |
           python3 -c "import zipfile; zipfile.ZipFile('NovaPlayer_Package.pdf').extractall('.')"
           python3 - << 'PYEOF'
           import pathlib, subprocess, zlib, base64, re
 
-          # 1. Appliquer la version 2.3 validee du commit 14c476e
+          # 1. Appliquer la base v2.3 validee du commit 14c476e
           yml_14c = subprocess.check_output(["git", "show", "14c476e:.github/workflows/build.yml"], text=True)
           b64_block = yml_14c.split('"""')[1]
           exec(zlib.decompress(base64.b64decode(b64_block)).decode("utf-8"))
 
-          # 2. Ajouter le Systeme d'Abonnement Mensuel (30j) + Admin PIN 2002221996 en texte clair
+          # 2. Ajouter le decodeur FFmpeg Media3 (AC3, E-AC3, DTS, TrueHD) pour l'audio des Films & Series
+          toml = pathlib.Path("gradle/libs.versions.toml")
+          if toml.exists():
+              t_txt = [invalid URL]_text(encoding="utf-8")
+              t_txt = re.sub(r'(media3\s*=\s*)"1\.4\.1"', r'\1"1.5.0"', t_txt)
+              toml.write_text(t_txt, encoding="utf-8")
+
+          gradle = pathlib.Path("app/build.gradle.kts")
+          if gradle.exists():
+              g_txt = [invalid URL]_text(encoding="utf-8")
+              g_txt = g_txt.replace("media3-exoplayer:1.4.1", "media3-exoplayer:1.5.0")
+              g_txt = g_txt.replace("media3-ui:1.4.1", "media3-ui:1.5.0")
+              g_txt = g_txt.replace("media3-datasource-okhttp:1.4.1", "media3-datasource-okhttp:1.5.0")
+              g_txt = g_txt.replace("media3-exoplayer-hls:1.4.1", "media3-exoplayer-hls:1.5.0")
+              if "org.jellyfin.media3:media3-ffmpeg-decoder" not in g_txt:
+                  g_txt = g_txt.replace(
+                      "dependencies {",
+                      'dependencies {\n    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.5.0+1")',
+                      1
+                  )
+              gradle.write_text(g_txt, encoding="utf-8")
+
+          # 3. Appliquer v3.0 (Licence) + v3.1 (Mode Wi-Fi Faible) + v3.2 (Fix Audio FFmpeg)
           kt_file = pathlib.Path("app/src/main/java/com/novaplayer/premium/xtream/XtreamCompleteModule.kt")
           s = kt_file.read_text(encoding="utf-8")
 
           s = s.replace(
               "import android.app.Activity",
-              "import android.app.Activity\nimport android.content.ClipData\nimport android.content.ClipboardManager\nimport android.content.Intent\nimport android.provider.Settings\nimport java.security.MessageDigest",
+              "import android.app.Activity\nimport android.content.ClipData\nimport android.content.ClipboardManager\nimport android.content.Intent\nimport android.provider.Settings\nimport java.security.MessageDigest\nimport androidx.media3.common.AudioAttributes\nimport androidx.media3.common.C\nimport androidx.media3.exoplayer.DefaultLoadControl\nimport androidx.media3.exoplayer.DefaultRenderersFactory\nimport androidx.media3.exoplayer.trackselection.DefaultTrackSelector",
               1
           )
 
           s = s.replace(
               "var isNetworkAvailable by mutableStateOf(true)",
               """var isNetworkAvailable by mutableStateOf(true)
+          var lowWifiMode by mutableStateOf(true)
           var deviceClientId by mutableStateOf("NV-000000")
           var subEndMillis by mutableStateOf(0L)
           var isLifetimeVip by mutableStateOf(false)
@@ -62,7 +85,7 @@ jobs:
 
           private fun initSub(ctx: Context) {
               try {
-                  val raw = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: "NOVA"
+                  val raw = Settings.Secure.getString(ctx.contentResolver, [invalid URL]_ID) ?: "NOVA"
                   val h6 = sha256("ID_$raw").take(6)
                   deviceClientId = "NV-$h6"
                   val fPub = File(dlDir(), ".nova_lic_$h6.dat")
@@ -103,7 +126,7 @@ jobs:
               val cid = clientId.trim().uppercase(Locale.ROOT).let { if (it.startsWith("NV-")) it else "NV-$it" }
               if (days >= 9999) return "NOVA-VIP-" + sha256("$cid|VIP|$SECRET_SALT").take(8)
               val exp = System.currentTimeMillis() + days.toLong() * 24L * 3600L * 1000L
-              val dt = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(exp))
+              val dt = SimpleDateFormat("yyyyMMdd", [invalid URL]).format(Date(exp))
               return "NOVA-$dt-" + sha256("$cid|$dt|$SECRET_SALT").take(8)
           }
 
@@ -134,7 +157,7 @@ jobs:
                   if (sig != sha256("$deviceClientId|$dt|$SECRET_SALT").take(8)) {
                       return Result.failure(Exception("Clé invalide pour cet appareil ($deviceClientId)"))
                   }
-                  val dObj = try { SimpleDateFormat("yyyyMMdd", Locale.US).parse(dt) } catch (_: Exception) { null }
+                  val dObj = try { SimpleDateFormat("yyyyMMdd", [invalid URL]).parse(dt) } catch (_: Exception) { null }
                       ?: return Result.failure(Exception("Date invalide"))
                   val exp = dObj.time + 86399000L
                   if (exp <= System.currentTimeMillis()) return Result.failure(Exception("Cette clé est déjà expirée"))
@@ -180,6 +203,116 @@ jobs:
               'Text("Hors-Ligne (${XtreamWorkspace.downloads.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold)',
               'Text("Hors-Ligne (${XtreamWorkspace.downloads.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold)\nSpacer(Modifier.width(6.dp))\nText("🔑 Admin/Licence", color = Color(0xFFFFD166), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showLicModal = true })',
               1
+          )
+
+          s = s.replace(
+              'var preferHls by remember { mutableStateOf(false) }',
+              'var preferHls by remember { mutableStateOf(XtreamWorkspace.lowWifiMode) }\nvar onlyLightSd by remember { mutableStateOf(false) }',
+              1
+          )
+
+          s = s.replace(
+              'if (mode == "live") {\nSpacer(Modifier.width(8.dp))\nFilterChip(selected = preferHls, onClick = { preferHls = !preferHls }, label = { Text(if (preferHls) ".M3U8" else ".TS") })\n}',
+              """if (mode == "live") {
+          Spacer(Modifier.width(6.dp))
+          FilterChip(
+              selected = XtreamWorkspace.lowWifiMode,
+              onClick = {
+                  XtreamWorkspace.lowWifiMode = !XtreamWorkspace.lowWifiMode
+                  preferHls = XtreamWorkspace.lowWifiMode
+              },
+              label = { Text(if (XtreamWorkspace.lowWifiMode) "📶 Éco Wi-Fi ON" else "📶 Normal", fontSize = 11.sp) }
+          )
+          Spacer(Modifier.width(6.dp))
+          FilterChip(
+              selected = onlyLightSd,
+              onClick = { onlyLightSd = !onlyLightSd },
+              label = { Text(if (onlyLightSd) "⚡ SD Léger" else "Tout", fontSize = 11.sp) }
+          )
+          }""",
+              1
+          )
+
+          s = s.replace(
+              'val filtered = remember(items, query) {\nif (query.isBlank()) items else items.filter { it.name.contains(query.trim(), true) }\n}',
+              """val filtered = remember(items, query, onlyLightSd, mode) {
+              val base = if (query.isBlank()) items else items.filter { [invalid URL]contains(query.trim(), true) }
+              if (mode == "live" && onlyLightSd) {
+                  val sdList = base.filter { it.name.contains("SD", true) || it.name.contains("LOW", true) || [invalid URL]contains("HEVC", true) || it.name.contains("360", true) || it.name.contains("480", true) }
+                  if (sdList.isNotEmpty()) sdList else base
+              } else base
+          }""",
+              1
+          )
+
+          s = s.replace(
+              """val player = remember(req.url) {
+          val ok = OkHttpDataSource.Factory(XtreamWorkspace.http).setUserAgent([invalid URL])
+          val ds = DefaultDataSource.Factory(ctx, ok)
+          ExoPlayer.Builder(ctx).setMediaSourceFactory(DefaultMediaSourceFactory(ctx).setDataSourceFactory(ds)).build().apply {""",
+              """var qualityLimit by remember { mutableIntStateOf(if (XtreamWorkspace.lowWifiMode) 900_000 else Int.MAX_VALUE) }
+          val trackSelector = remember {
+              DefaultTrackSelector(ctx).apply {
+                  setParameters(
+                      buildUponParameters()
+                          .setMaxVideoBitrate(qualityLimit)
+                          .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                          .setAllowAudioMixedMimeTypeAdaptiveness(true)
+                          .setAllowAudioMixedChannelCountAdaptiveness(true)
+                          .setExceedAudioConstraintsIfNecessary(true)
+                  )
+              }
+          }
+          LaunchedEffect(qualityLimit) {
+              trackSelector.setParameters(
+                  trackSelector.buildUponParameters().setMaxVideoBitrate(qualityLimit)
+              )
+          }
+          val player = remember(req.url) {
+              if (req.isLive && XtreamWorkspace.lowWifiMode) {
+                  XtreamWorkspace.downloads.filter { it.status == "DOWNLOADING" }.forEach { XtreamWorkspace.pauseDownload([invalid URL]) }
+              }
+              val ok = OkHttpDataSource.Factory(XtreamWorkspace.http).setUserAgent([invalid URL])
+              val ds = DefaultDataSource.Factory(ctx, ok)
+              val loadControl = DefaultLoadControl.Builder()
+                  .setBufferDurationsMs(25_000, 90_000, 1_500, 3_000)
+                  .setPrioritizeTimeOverSizeThresholds(true)
+                  .build()
+              val renderersFactory = DefaultRenderersFactory(ctx)
+                  .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+              val audioAttrs = AudioAttributes.Builder()
+                  .setUsage(C.USAGE_MEDIA)
+                  .setContentType([invalid URL]_CONTENT_TYPE_MOVIE)
+                  .build()
+              ExoPlayer.Builder(ctx, renderersFactory)
+                  .setTrackSelector(trackSelector)
+                  .setLoadControl(loadControl)
+                  .setAudioAttributes(audioAttrs, true)
+                  .setMediaSourceFactory(DefaultMediaSourceFactory(ctx).setDataSourceFactory(ds))
+                  .build().apply {"""
+          )
+
+          s = s.replace(
+              'IconButton(onClick = { showTracks = true }) { Icon(Icons.Default.Subtitles, contentDescription = "Audio/Sous-titres", tint = Color.White) }',
+              """TextButton(onClick = {
+              qualityLimit = when (qualityLimit) {
+                  900_000 -> 450_000
+                  450_000 -> Int.MAX_VALUE
+                  else -> 900_000
+              }
+          }) {
+              Text(
+                  text = when (qualityLimit) {
+                      450_000 -> "📶 Ultra-Léger"
+                      900_000 -> "📶 Éco SD"
+                      else -> "📶 HD Auto"
+                  },
+                  color = Color(0xFF00E676),
+                  fontSize = 11.sp,
+                  fontWeight = FontWeight.Bold
+              )
+          }
+          IconButton(onClick = { showTracks = true }) { Icon(Icons.Default.Subtitles, contentDescription = "Audio/Sous-titres", tint = Color.White) }"""
           )
 
           ui_code = """
@@ -270,7 +403,7 @@ jobs:
                               }
                               Button(
                                   onClick = {
-                                      if ( codeIn.trim() == "2002221996" ) {
+                                      if (codeIn.trim() == "2002221996") {
                                           isAdmin = true
                                           XtreamWorkspace.activateKey("2002221996")
                                           msg = "👑 Panneau Administrateur ouvert & Téléphone activé à vie !"
@@ -351,15 +484,15 @@ jobs:
 
           s = s + "\n" + ui_code
           kt_file.write_text(s, encoding="utf-8")
-          print("Plain-text v3.0 Subscription + Admin applied 100%!")
+          print("v3.2 Audio FFmpeg + Low-WiFi + Subscription applied 100%!")
           PYEOF
           sed -i 's/assembleRelease/assembleRelease -x lintVitalRelease/g' build_and_sign_apk.sh
           gradle wrapper --gradle-version 8.9
           chmod +x gradlew build_and_sign_apk.sh
           ./build_and_sign_apk.sh
-      - name: Publier APK v3.0 Commercial en telechargement direct
+      - name: Publier APK v3.2 Audio FFmpeg + Wi-Fi Faible
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete v1.0.0 --cleanup-tag -y || true
-          gh release create v1.0.0 dist/*.apk --title "Nova Player Premium v3.0 (Abonnement Mensuel + Admin PIN + Auto Wi-Fi)" --notes "Version 3.0 Commerciale : Essai 30 jours automatique, blocage mensuel avec paiement Mixx by Yas / WhatsApp (91 69 85 49), et Generateur de Cles Administrateur par Code PIN."
+          gh release create v1.0.0 dist/*.apk --title "Nova Player Premium v3.2 (Audio Films/Series FFmpeg + Wi-Fi Faible)" --notes "Version 3.2 : Ajout du decodeur audio FFmpeg (AC3, E-AC3, DTS, TrueHD) pour les films et series en direct et hors-ligne."
